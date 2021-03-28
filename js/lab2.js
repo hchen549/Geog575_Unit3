@@ -15,23 +15,23 @@ function setMap() {
     .attr("height", height);
 
   var promises = [
-    // d3.csv("data/unitsData.csv"),
-    d3.json("data/EuropeCountries.topojson"),
+    d3.csv("data/data_attributes.csv"),
+    // d3.json("data/EuropeCountries.topojson"),
     (us = d3.json("https://unpkg.com/us-atlas@3/counties-10m.json")),
   ];
 
   Promise.all(promises).then(callback);
 
   function callback(data) {
-    europe = data[0];
+    attributes = data[0];
     usmap = data[1];
-    console.log(europe);
+    console.log(attributes);
     console.log(usmap);
 
-    var europeCountries = topojson.feature(
-      europe,
-      europe.objects.EuropeCountries
-    );
+    // var europeCountries = topojson.feature(
+    //   europe,
+    //   europe.objects.EuropeCountries
+    // );
     var states = topojson.feature(usmap, usmap.objects.states);
     console.log(states);
 
