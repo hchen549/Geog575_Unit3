@@ -1,162 +1,68 @@
-window.onload = function () {
-  var w = 900;
-  var h = 900;
-  var container = d3
+//begin script when window loads
+window.onload = setMap();
+
+function setMap() {
+  //use Promise.all to parallelize asynchronous data loading
+  var width = 960;
+  var height = 460;
+
+  //create new svg container for the map
+
+  var map = d3
     .select("body")
     .append("svg")
-    .attr("width", w)
-    .attr("height", h)
-    .attr("class", "container")
-    .style("background-color", "rgba(0,0,0,0.2)");
+    .attr("class", "map")
+    .attr("width", width)
+    .attr("height", height);
 
-  var innerRect = container
+  //create Albers equal area conic projection centered on France
 
-    .append("rect")
-    .datum(400)
-    .attr("width", function (d) {
-      return d * 2;
-    })
-    .attr("height", function (d) {
-      return d;
-    })
-    .attr("class", "innerRect")
-    .attr("x", 50)
-    .attr("y", 50)
-    .style("fill", "#FFFFFF");
-
-  //   var dataArray = [10, 20, 30, 40, 50];
-  //   var circles = container
-  //     .selectAll(".circles")
-  //     .data(dataArray)
-  //     .enter()
-  //     .append("circle")
-  //     .attr("class", "circles")
-  //     .attr("r", function (d, i) {
-  //       console.log("d:", d, "i:", i);
-  //       return d;
-  //     })
-  //     .attr("cx", function (d, i) {
-  //       return 70 + i * 180;
-  //     })
-  //     .attr("cy", function (d) {
-  //       return 450 - d * 5;
-  //     });
-
-  var cityPop = [
-    {
-      city: "Madison",
-      population: 233209,
-    },
-    {
-      city: "Milwaukee",
-      population: 594833,
-    },
-    {
-      city: "Green Bay",
-      population: 104057,
-    },
-    {
-      city: "Superior",
-      population: 27244,
-    },
+  var promises = [
+    d3.csv("data/unitsData.csv"),
+    d3.json("data/EuropeCountries.topojson"),
+    d3.json("data/FranceRegions.topojson"),
   ];
 
-  var x = d3.scaleLinear().range([90, 750]).domain([0, 3]);
-  var minPop = d3.min(cityPop, function (d) {
-    return d.population;
-  });
+  var projection = d3
+    .geoAlbers()
+    .center([0, 46.2])
+    .rotate([-2, 0])
+    .parallels([43, 62])
+    .scale(2500)
+    .translate([width / 2, height / 2]);
 
-  var maxPop = d3.max(cityPop, function (d) {
-    return d.population;
-  });
+  var path = d3.geoPath().projection(projection);
 
-  var y = d3
-    .scaleLinear()
-    .range([450, 50]) //was 440, 95
-    .domain([0, 700000]); //was minPop, maxPop
+  Promise.all(promises).then(callback);
 
-  var color = d3
-    .scaleLinear()
-    .range(["#FDBE85", "#D94701"])
-    .domain([minPop, maxPop]);
+  function callback(data) {
+    csvData = data[0];
+    europe = data[1];
+    france = data[2];
+    //translate europe TopoJSON
+    var europeCountries = topojson.feature(
+        europe,
+        europe.objects.EuropeCountries
+      ),
+      franceRegions = topojson.feature(france, france.objects.FranceRegions)
+        .features;
 
-  var yAxis = d3.axisLeft(y);
+    //add Europe countries to map
+    var countries = map
+      .append("path")
+      .datum(europeCountries)
+      .attr("class", "countries")
+      .attr("d", path);
 
-  var circles = container
-    .selectAll(".circles")
-    .data(cityPop)
-    .enter()
-    .append("circle")
-    .attr("class", "circles")
-    .attr("id", function (d) {
-      return d.city;
-    })
-    .attr("r", function (d) {
-      var area = d.population * 0.01;
-      return Math.sqrt(area / Math.PI);
-    })
-    .attr("cx", function (d, i) {
-      return x(i);
-    })
-    .attr("cy", function (d) {
-      return y(d.population);
-    })
-    .style("fill", function (d, i) {
-      return color(d.population);
-    })
-    .style("stroke", "#000");
-
-  var axis = container
-    .append("g")
-    .attr("class", "axis")
-    .attr("transform", "translate(50, 0)")
-    .call(yAxis);
-
-  var title = container
-    .append("text")
-    .attr("class", "title")
-    .attr("text-anchor", "middle")
-    .attr("x", 450)
-    .attr("y", 30)
-    .text("City Populations");
-
-  var labels = container
-    .selectAll(".labels")
-    .data(cityPop)
-    .enter()
-    .append("text")
-    .attr("class", "labels")
-    .attr("text-anchor", "left")
-    .attr("y", function (d) {
-      //vertical position centered on each circle
-      return y(d.population);
-    });
-
-  //first line of label
-  var nameLine = labels
-    .append("tspan")
-    .attr("class", "nameLine")
-    .attr("x", function (d, i) {
-      //horizontal position to the right of each circle
-      return x(i) + Math.sqrt((d.population * 0.01) / Math.PI) + 5;
-    })
-    .text(function (d) {
-      return d.city;
-    });
-
-  var format = d3.format(",");
-  //second line of label
-  var popLine = labels
-    .append("tspan")
-    .attr("class", "popLine")
-    .attr("x", function (d, i) {
-      //horizontal position to the right of each circle
-      return x(i) + Math.sqrt((d.population * 0.01) / Math.PI) + 5;
-    })
-    .attr("dy", "15")
-    .text(function (d) {
-      return "Pop. " + format(d.population);
-    });
-
-  console.log(container);
-};
+    //add France regions to map
+    var regions = map
+      .selectAll(".regions")
+      .data(franceRegions)
+      .enter()
+      .append("path")
+      .attr("class", function (d) {
+        return "regions " + d.properties.adm1_code;
+      })
+      .attr("d", path);
+  }
+}
