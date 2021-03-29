@@ -14,6 +14,8 @@ function setMap() {
     .attr("width", width)
     .attr("height", height);
 
+  var g = map.append("g");
+
   var promises = [
     d3.csv("data/data_attributes.csv"),
     // d3.json("data/EuropeCountries.topojson"),
@@ -45,7 +47,7 @@ function setMap() {
     // console.log(states.features);
     // console.log(states.features[0]["id"]);
 
-    var regions = map
+    var regions = g
       .selectAll("path")
       .data(states.features)
       .enter()
@@ -59,6 +61,8 @@ function setMap() {
       .attr("d", (state) => path(state))
       //   .attr()
       .attr("fill", "white")
+      .append("title")
+      .text((state) => `${state.properties.name}`)
       .on("mouseover", function (state) {
         tooltip.transition().style("visibility", "visible");
         console.log(map.select(".Wisconsin"));
@@ -68,5 +72,17 @@ function setMap() {
       .on("mouseout", (countyDataItem) => {
         tooltip.transition().style("visibility", "hidden");
       });
+
+    var zoom = d3
+      .zoom()
+      .scaleExtent([1, 8])
+      .on("zoom", function () {
+        d3.select("g").attr(
+          "transform",
+          "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")"
+        );
+      });
+
+    map.call(zoom);
   }
 }

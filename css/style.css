@@ -22,6 +22,11 @@
   stroke: #ccc;
   stroke-width: 2px;
 }
+.regions {
+  stroke: #000;
+  stroke-width: 0.5px;
+  stroke-linecap: round;
+}
 
 svg {
   background-color: grey;
@@ -35,6 +40,11 @@ svg {
   fill: black;
 }
 
+.usstate {
+  stroke: #ccc;
+  stroke-width: 2px;
+}
+
 #tooltip {
   visibility: hidden;
   height: auto;
@@ -43,4 +53,16 @@ svg {
   color: #fdf1e7;
   font-size: 24px;
   margin-bottom: 5px;
+}
+
+.map {
+  border: medium solid #999;
+  margin: 10px 0 0 20px;
+}
+
+.chart {
+  background-color: rgba(128, 128, 128, 0.2);
+  border: medium solid #999;
+  float: right;
+  margin: 10px 20px 0 0;
 }
