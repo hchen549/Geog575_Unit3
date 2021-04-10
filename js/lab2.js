@@ -12,7 +12,7 @@ var expressed = "vaccinated";
 
 var chartWidth = window.innerWidth * 0.55,
   chartHeight = 460,
-  leftPadding = 25,
+  leftPadding = 40,
   rightPadding = 2,
   topBottomPadding = 5,
   chartInnerWidth = chartWidth - leftPadding - rightPadding,
@@ -56,14 +56,14 @@ function setMap() {
   function callback(data) {
     attributes = data[0];
     usmap = data[1];
-    console.log(attributes);
+    // console.log(attributes);
 
     var states = topojson.feature(usmap, usmap.objects.states);
     // console.log(states);
 
     joinData(states, attributes);
 
-    console.log(states);
+    // console.log(states);
 
     projection = d3.geoAlbersUsa().fitSize([width, height], states);
     path = d3.geoPath(projection);
@@ -104,7 +104,7 @@ function makeColorScale(data) {
     return parseFloat(d[expressed]);
   });
 
-  console.log(min, max);
+  // console.log(min, max);
 
   var colorScale = d3
     .scaleLinear()
@@ -117,7 +117,7 @@ function makeColorScale(data) {
 
 function setEnumerationUnits(states, map, path, colorScale) {
   var regions = map
-    .selectAll(".regions")
+    .selectAll(".path")
     .data(states.features)
     .enter()
     .append("path")
@@ -130,11 +130,19 @@ function setEnumerationUnits(states, map, path, colorScale) {
     //   .attr()
     .attr("fill", "white")
     .style("fill", (d) => {
-      console.log(d["properties"][expressed]);
+      // console.log(d["properties"][expressed]);
       return colorScale(d["properties"][expressed]);
     })
     .on("mouseover", function (event, state) {
-      highlightState(state.properties.name);
+      highlightStateMap(state.properties.name);
+      highlightStateBar(state.properties.name);
+      setLabel(state);
+    })
+    .on("mouseout", function (event, state) {
+      // state = state.properties.name;
+      dehighlightMap(state.properties.name);
+      dehighlightBar(state.properties.name);
+      d3.select(".infolabel").remove();
     })
     .append("title")
     .text((state) => `${state.properties.name}`);
@@ -187,22 +195,18 @@ function setChart(attributes, colorScale) {
     })
     .attr("width", chartWidth / attributes.length - 1)
     .on("mouseover", (event, d) => {
-      console.log(d);
-      highlightState(d.states);
+      // console.log(d);
+      highlightStateMap(d.states);
+      highlightStateBar(d.states);
+    })
+    .on("mouseout", (event, d) => {
+      dehighlightMap(d.states);
+      dehighlightBar(d.states);
     });
 
-  // .attr("x", function (d, i) {
-  //   return i * (chartWidth / attributes.length) + leftPadding;
-  // })
-  // .attr("height", (d) => {
-  //   return chartHeight - yScale(parseFloat(d[expressed]));
-  // })
-  // .attr("y", (d) => {
-  //   return yScale(parseFloat(d[expressed])) + topBottomPadding;
-  // })
-  // .style("fill", function (d) {
-  //   return colorScale(d[expressed]);
-  // });
+  var desc = bars
+    .append("desc")
+    .text('{"stroke": "none", "stroke-width": "0px"}');
 
   updateChart(bars, attributes.length, colorScale);
 
@@ -257,6 +261,17 @@ function updateChart(bars, n, colorScale) {
         return "#ccc";
       }
     });
+
+  var yAxis = d3.axisLeft().scale(yScale);
+
+  d3.select(".axis").call(yAxis);
+
+  // //place axis
+  // var axis = chart
+  //   .append("g")
+  //   .attr("class", "axis")
+  //   .attr("transform", translate)
+  //   .call(yAxis);
 }
 
 function createDropdown(attributes) {
@@ -265,7 +280,6 @@ function createDropdown(attributes) {
     .append("select")
     .attr("class", "dropdown")
     .on("change", function () {
-      console.log("change attribues");
       return changeAttributes(this.value, attributes);
     });
 
@@ -293,7 +307,7 @@ function changeAttributes(option, attributes) {
 
   var colorScale = makeColorScale(attributes);
 
-  console.log(expressed);
+  // console.log(expressed);
 
   var yScale = d3
     .scaleLinear()
@@ -320,13 +334,12 @@ function changeAttributes(option, attributes) {
       }
     });
 
-  console.log("change bars");
+  // console.log("change bars");
 
   var bars = d3
     .selectAll(".bars")
     //re-sort bars
     .sort(function (a, b) {
-      console.log("a");
       return b[expressed] - a[expressed];
     })
     .transition()
@@ -338,8 +351,54 @@ function changeAttributes(option, attributes) {
   updateChart(bars, attributes.length, colorScale);
 }
 
-function highlightState(state) {
-  d3.selectAll("#" + state)
+function highlightStateMap(state) {
+  d3.select(".map")
+    .select("#" + state)
+    // .select("#" + state.properties.name)
     .style("stroke", "blue")
     .style("stroke-width", "2");
+}
+
+function highlightStateBar(state) {
+  d3.select(".chart")
+    .select("#" + state)
+    // .select("#" + state.states)
+    .style("stroke", "blue")
+    .style("stroke-width", "2");
+}
+
+function dehighlightMap(state) {
+  // {"stroke": "#000", "stroke-width": "0.5px"}
+  d3.select(".map")
+    // .select("#" + state.properties.name)
+    .select("#" + state)
+    .style("stroke", "#ccc")
+    .style("stroke-width", "2px");
+}
+
+function dehighlightBar(state) {
+  d3.select(".chart")
+    // .select("#" + state.states)
+    .select("#" + state)
+    .style("stroke", "none")
+    .style("stroke-width", "0px");
+}
+
+function setLabel(props) {
+  var labelAttribute =
+    "<h1>" + props.properties[expressed] + "</h1><b>" + expressed + "</b>";
+
+  var infolabel = d3
+    .select("body")
+    .append("div")
+    .attr("class", "infolabel")
+    .attr("id", props.properties.name + "_label")
+    .html(labelAttribute);
+
+  console.log(props);
+  console.log(props.properties.name);
+  var stateNAme = infolabel
+    .append("div")
+    .attr("class", "labelname")
+    .html(props.properties.name);
 }
