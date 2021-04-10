@@ -19,16 +19,6 @@ var chartWidth = window.innerWidth * 0.55,
   chartInnerHeight = chartHeight - topBottomPadding * 2,
   translate = "translate(" + leftPadding + "," + topBottomPadding + ")";
 
-// var yScale = d3
-//   .scaleLinear()
-//   .range([chartHeight, 0])
-//   .domain([
-//     0,
-//     d3.max(attributes, (d) => {
-//       return parseFloat(d[expressed]);
-//     }),
-//   ]);
-
 function setMap() {
   let tooltip = d3.select("#tooltip");
   var width = window.innerWidth * 0.4;
@@ -136,7 +126,7 @@ function setEnumerationUnits(states, map, path, colorScale) {
     .on("mouseover", function (event, state) {
       highlightStateMap(state.properties.name);
       highlightStateBar(state.properties.name);
-      setLabel(state);
+      setLabelMap(state);
     })
     .on("mouseout", function (event, state) {
       // state = state.properties.name;
@@ -144,12 +134,28 @@ function setEnumerationUnits(states, map, path, colorScale) {
       dehighlightBar(state.properties.name);
       d3.select(".infolabel").remove();
     })
+    .on("mousemove", moveLabel)
     .append("title")
     .text((state) => `${state.properties.name}`);
 
   var desc = regions
     .append("desc")
     .text('{"stroke": "#000", "stroke-width": "0.5px"}');
+
+  var map = d3.select(".map");
+  map
+    .append("g")
+    .attr("class", "legendLinear")
+    .attr("transform", "translate(360,10)");
+
+  var legendLinear = d3
+    .legendColor()
+    .shapeWidth(30)
+    // .cells([1, 2, 3, 6, 8])
+    .orient("horizontal")
+    .scale(colorScale);
+
+  map.select(".legendLinear").call(legendLinear);
 
   return regions;
 }
@@ -193,16 +199,19 @@ function setChart(attributes, colorScale) {
     .attr("id", (d) => {
       return d.states;
     })
-    .attr("width", chartWidth / attributes.length - 1)
+    .attr("width", chartInnerWidth / attributes.length - 1.3)
     .on("mouseover", (event, d) => {
-      // console.log(d);
+      console.log(d);
       highlightStateMap(d.states);
       highlightStateBar(d.states);
+      setLabelChart(d);
     })
     .on("mouseout", (event, d) => {
       dehighlightMap(d.states);
       dehighlightBar(d.states);
-    });
+      d3.select(".infolabel").remove();
+    })
+    .on("mousemove", moveLabel);
 
   var desc = bars
     .append("desc")
@@ -243,7 +252,8 @@ function updateChart(bars, n, colorScale) {
   // Update bar itself
   bars
     .attr("x", function (d, i) {
-      return i * (chartInnerWidth / n) + leftPadding;
+      // return i * (chartInnerWidth / n) + leftPadding;
+      return i * (chartInnerWidth / n - 1) + leftPadding;
     })
     //size/resize bars
     .attr("height", function (d, i) {
@@ -384,7 +394,7 @@ function dehighlightBar(state) {
     .style("stroke-width", "0px");
 }
 
-function setLabel(props) {
+function setLabelMap(props) {
   var labelAttribute =
     "<h1>" + props.properties[expressed] + "</h1><b>" + expressed + "</b>";
 
@@ -392,13 +402,66 @@ function setLabel(props) {
     .select("body")
     .append("div")
     .attr("class", "infolabel")
-    .attr("id", props.properties.name + "_label")
-    .html(labelAttribute);
+    .attr("id", props.properties.name + "_label");
+  // .html(labelAttribute);
 
   console.log(props);
   console.log(props.properties.name);
-  var stateNAme = infolabel
+  var stateName = infolabel
     .append("div")
     .attr("class", "labelname")
-    .html(props.properties.name);
+    .html("<b>" + "State: " + props.properties.name + "</b>");
+
+  var attributeName = infolabel
+    .append("div")
+    .attr("class", "labelname")
+    .html("<b>" + "Attr: " + expressed + "</b>");
+
+  var attributeValue = infolabel
+    .append("div")
+    .attr("class", "labelname")
+    .html("<b>" + "Value: " + props.properties[expressed] + "<b>");
+}
+
+function setLabelChart(d) {
+  var infolabel = d3
+    .select("body")
+    .append("div")
+    .attr("class", "infolabel")
+    .attr("id", d.states + "_label");
+  // .html(labelAttribute);
+
+  var stateName = infolabel
+    .append("div")
+    .attr("class", "labelname")
+    .html("<b>" + "State: " + d.states + "</b>");
+
+  var attributeName = infolabel
+    .append("div")
+    .attr("class", "labelname")
+    .html("<b>" + "Attr: " + expressed + "</b>");
+
+  var attributeValue = infolabel
+    .append("div")
+    .attr("class", "labelname")
+    .html("<b>" + "Value: " + d[expressed] + "<b>");
+}
+function moveLabel() {
+  //use coordinates of mousemove event to set label coordinates
+  var labelWidth = d3.select(".infolabel").node().getBoundingClientRect().width;
+
+  //use coordinates of mousemove event to set label coordinates
+  var x1 = event.clientX + 10,
+    y1 = event.clientY - 75,
+    x2 = event.clientX - labelWidth - 10,
+    y2 = event.clientY + 25;
+
+  //horizontal label coordinate, testing for overflow
+  var x = event.clientX > window.innerWidth - labelWidth - 20 ? x2 : x1;
+  //vertical label coordinate, testing for overflow
+  var y = event.clientY < 75 ? y2 : y1;
+
+  d3.select(".infolabel")
+    .style("left", x + "px")
+    .style("top", y + "px");
 }
