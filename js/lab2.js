@@ -17,7 +17,8 @@ var chartWidth = window.innerWidth * 0.55,
   topBottomPadding = 5,
   chartInnerWidth = chartWidth - leftPadding - rightPadding,
   chartInnerHeight = chartHeight - topBottomPadding * 2,
-  translate = "translate(" + leftPadding + "," + topBottomPadding + ")";
+  // translate = "translate(" + leftPadding + "," + 0 + ")";
+  translate = "translate(" + leftPadding + "," + topBottomPadding / 2 + ")";
 
 function setMap() {
   let tooltip = d3.select("#tooltip");
@@ -55,7 +56,7 @@ function setMap() {
 
     // console.log(states);
 
-    projection = d3.geoAlbersUsa().fitSize([width, height], states);
+    projection = d3.geoAlbersUsa().fitSize([width - 30, height - 30], states);
     path = d3.geoPath(projection);
 
     var colorScale = makeColorScale(attributes);
@@ -98,7 +99,7 @@ function makeColorScale(data) {
 
   var colorScale = d3
     .scaleLinear()
-    .range(["yellow", "red"])
+    .range(["white", "blue"])
     .domain([min, max])
     .unknown("#ccc");
 
@@ -119,6 +120,8 @@ function setEnumerationUnits(states, map, path, colorScale) {
     .attr("d", (state) => path(state))
     //   .attr()
     .attr("fill", "white")
+    .attr("transform", "translate(0,15)")
+
     .style("fill", (d) => {
       // console.log(d["properties"][expressed]);
       return colorScale(d["properties"][expressed]);
@@ -146,13 +149,13 @@ function setEnumerationUnits(states, map, path, colorScale) {
   map
     .append("g")
     .attr("class", "legendLinear")
-    .attr("transform", "translate(360,10)");
+    .attr("transform", "translate(410,5)");
 
   var legendLinear = d3
     .legendColor()
     .shapeWidth(30)
     // .cells([1, 2, 3, 6, 8])
-    .orient("horizontal")
+    // .orient("horizontal")
     .scale(colorScale);
 
   map.select(".legendLinear").call(legendLinear);
@@ -183,7 +186,8 @@ function setChart(attributes, colorScale) {
     .attr("x", 400)
     .attr("y", 40)
     .attr("class", "chartTitle")
-    .text("Number of Variable " + expressed + " in each state");
+    .style("font-size", "22px")
+    .text("Number of " + expressed + " in each state");
 
   var bars = chart
     .selectAll(".bars")
@@ -247,7 +251,7 @@ function updateChart(bars, n, colorScale) {
   // Update chart title
   d3.select(".chart")
     .select("text")
-    .text("Number of Variable " + expressed + " in each state");
+    .text("Number of " + expressed + " in each state");
 
   // Update bar itself
   bars
@@ -289,6 +293,7 @@ function createDropdown(attributes) {
     .select("body")
     .append("select")
     .attr("class", "dropdown")
+    // .attr("transform", "translate(0,125)")
     .on("change", function () {
       return changeAttributes(this.value, attributes);
     });
@@ -344,6 +349,15 @@ function changeAttributes(option, attributes) {
       }
     });
 
+  var legendLinear = d3
+    .legendColor()
+    .shapeWidth(30)
+    // .cells([1, 2, 3, 6, 8])
+    // .orient("horizontal")
+    .scale(colorScale);
+
+  d3.select(".legendLinear").call(legendLinear);
+
   // console.log("change bars");
 
   var bars = d3
@@ -365,7 +379,7 @@ function highlightStateMap(state) {
   d3.select(".map")
     .select("#" + state)
     // .select("#" + state.properties.name)
-    .style("stroke", "blue")
+    .style("stroke", "red")
     .style("stroke-width", "2");
 }
 
@@ -373,7 +387,7 @@ function highlightStateBar(state) {
   d3.select(".chart")
     .select("#" + state)
     // .select("#" + state.states)
-    .style("stroke", "blue")
+    .style("stroke", "red")
     .style("stroke-width", "2");
 }
 
